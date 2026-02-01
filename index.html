@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hospital AI – Patient Intake</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <h1>🏥 Hospital AI – Patient Intake</h1>
+
+    <label>Patient ID</label>
+    <input id="patientId" placeholder="P001" />
+
+    <label>Patient Report</label>
+    <textarea id="report" placeholder="Paste patient report here..."></textarea>
+
+    <button onclick="submitReport()">Analyze</button>
+
+    <div id="loading" class="hidden">Analyzing with AI...</div>
+
+    <div id="result" class="result hidden">
+      <h2>🤖 AI Result</h2>
+      <p><b>Patient ID:</b> <span id="rPatient"></span></p>
+      <p><b>Department:</b> <span id="rDept"></span></p>
+      <p><b>Doctor:</b> <span id="rDoctor"></span></p>
+      <p><b>Risk Score:</b> <span id="rRisk"></span></p>
+
+      <h3>Summary</h3>
+      <pre id="rSummary"></pre>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

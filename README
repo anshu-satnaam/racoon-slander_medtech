@@ -1,0 +1,307 @@
+🏥 Agentic Hospital AI
+Balancing Risk and Capacity in Hospital Care
+🚀 Problem Statement
+
+Hospitals struggle to manage patient flow and care escalation in real time because:
+
+Patient conditions change continuously
+
+Beds, staff, and resources are limited
+
+Decisions rely on static rules and manual coordination
+
+This results in:
+
+Overcrowded emergency rooms
+
+Delayed or premature escalation
+
+Inefficient use of critical resources
+
+Core problem:
+There is no intelligent system that can continuously observe, reason, and adapt decisions as hospital conditions evolve.
+
+💡 Our Solution
+
+We built an Agentic AI system for hospitals that:
+
+Uses LLMs + rule-based intelligence
+
+Continuously reasons about:
+
+Patient risk
+
+Resource availability
+
+Staff workload
+
+WHO safety thresholds
+
+Supports dynamic decisions instead of static dashboards
+
+This system acts like a digital care coordinator, supporting doctors, nurses, and administrators in real time.
+
+🧠 What is “Agentic AI” here?
+
+Our system is agentic, not just predictive, because it:
+
+Observes evolving patient data
+
+Reasons about multiple constraints
+
+Takes actions (recommendations, escalations, scheduling)
+
+Revisits decisions as conditions change
+
+Each responsibility is handled by a specialized agent.
+
+🏗️ System Architecture (High Level)
+Patient Data / Reports
+        ↓
+Diagnostic & Risk Agents
+        ↓
+Decision Intelligence Layer (LLM + Rules)
+        ↓
+Care Path Decisions
+(IMMEDIATE / OBSERVE / ROUTINE)
+        ↓
+Doctor / Nurse / Admin Panels
+        ↓
+Continuous Monitoring & Re-evaluation
+
+🤖 Agents Implemented
+1️⃣ Diagnostic Agent
+
+Accepts patient reports (text or files)
+
+Uses LLMs to summarize and extract risk signals
+
+Assists doctors (does NOT replace diagnosis)
+
+2️⃣ Risk Assessment Agent
+
+Computes a dynamic risk score (0–100)
+
+Uses vitals, symptoms, and WHO thresholds
+
+Categorizes patients into:
+
+High Risk (≥70) → frequent monitoring
+
+Medium Risk (40–70) → moderate monitoring
+
+Low Risk (<40) → routine observation
+
+3️⃣ Decision Agent
+
+Determines care path:
+
+Immediate escalation
+
+Observation
+
+Routine care
+
+Balances safety with hospital capacity
+
+4️⃣ Recommendation Agent
+
+Assigns:
+
+Department (Cardiology, ER, Surgery, etc.)
+
+Doctor
+
+Required resources (ICU, ECG, OT, etc.)
+
+Based on patient condition + hospital state
+
+5️⃣ Doctor Agent
+
+Reviews AI insights
+
+Approves:
+
+Surgical vs non-surgical path
+
+Nurse instructions
+
+Retains full human control
+
+6️⃣ Nurse Coordination Agent
+
+Receives doctor-approved instructions
+
+Guides vitals monitoring intervals
+
+Prepares resources when required
+
+7️⃣ Predictive Deterioration Agent
+
+Uses vitals trends to predict:
+
+Improvement
+
+Stability
+
+Deterioration
+
+Alerts doctors early
+
+8️⃣ Stability & Discharge Agent
+
+Tracks vitals stability over doctor-defined time
+
+Decides:
+
+Discharge
+
+Retest
+
+Continued observation
+
+Automates post-discharge workflow
+
+9️⃣ Admin & Capacity Agent
+
+Tracks:
+
+Beds
+
+ICU capacity
+
+Nurse load
+
+Resources
+
+Displays real-time hospital state
+
+Supports operational decisions
+
+🔟 WHO Integration Agent
+
+Fetches WHO thresholds (free public data)
+
+Dynamically adjusts risk evaluation
+
+Keeps system aligned with global safety standards
+
+🧑‍💻 Frontend Panels
+
+We implemented role-based panels using HTML + JS (for speed and reliability):
+
+🧍 Patient Intake Panel
+
+Upload reports / enter symptoms
+
+Trigger AI analysis
+
+View recommendations
+
+🧑‍⚕️ Doctor Panel
+
+View AI summaries
+
+Approve surgery / care path
+
+Trigger predictions
+
+Approve nurse instructions
+
+👩‍⚕️ Nurse Panel
+
+View assigned patients
+
+Receive instructions
+
+Monitor vitals schedules
+
+🧑‍💼 Admin Panel
+
+Hospital capacity overview
+
+Risk distribution
+
+Resource availability
+
+WHO thresholds
+
+⚙️ Tech Stack
+Backend
+
+FastAPI (Python)
+
+Modular agent architecture
+
+In-memory state (hackathon-ready)
+
+REST APIs
+
+AI
+
+LLM-based reasoning (Groq / OpenAI compatible)
+
+Rule + LLM hybrid decision intelligence
+
+Frontend
+
+HTML, CSS, JavaScript
+
+Fetch API
+
+Role-based dashboards
+
+Deployment
+
+Backend: Render
+
+Frontend: Vercel / Netlify
+
+🌍 Why This Matters
+For Hospitals
+
+Better patient outcomes
+
+Reduced overload
+
+Smarter resource usage
+
+For Doctors & Nurses
+
+Less manual coordination
+
+Early warnings
+
+Decision support, not replacement
+
+For Healthcare Systems
+
+Scalable
+
+Adaptive
+
+Data-driven
+
+🏆 Hackathon Value Proposition
+
+✅ Solves a real healthcare problem
+
+✅ Goes beyond prediction → decision intelligence
+
+✅ Human-in-the-loop safety
+
+✅ Clear deployment path
+
+✅ Demonstrable end-to-end system
+
+🔮 Future Scope
+
+Integration with hospital EMR systems
+
+Real-time device vitals ingestion (HL7 / FHIR)
+
+Multi-hospital coordination
+
+Disaster & surge management
+
+Persistent databases & analytics

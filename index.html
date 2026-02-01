@@ -1,37 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Hospital AI – Patient Intake</title>
+  <title>Hospital AI Dashboard</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="container">
-    <h1>🏥 Hospital AI – Patient Intake</h1>
+<div class="sidebar">
+  <h2>🏥 Hospital AI</h2>
+  <button onclick="showPanel('intake')">Patient Intake</button>
+  <button onclick="showPanel('doctor')">Doctor Panel</button>
+  <button onclick="showPanel('nurse')">Nurse Panel</button>
+  <button onclick="showPanel('admin')">Admin Panel</button>
+</div>
 
-    <label>Patient ID</label>
-    <input id="patientId" placeholder="P001" />
+<div class="main">
 
-    <label>Patient Report</label>
-    <textarea id="report" placeholder="Paste patient report here..."></textarea>
-
+  <!-- PATIENT INTAKE -->
+  <div id="intake" class="panel">
+    <h1>Patient Intake</h1>
+    <input id="patientId" placeholder="Patient ID" />
+    <textarea id="report" placeholder="Paste report here"></textarea>
     <button onclick="submitReport()">Analyze</button>
 
-    <div id="loading" class="hidden">Analyzing with AI...</div>
-
-    <div id="result" class="result hidden">
-      <h2>🤖 AI Result</h2>
-      <p><b>Patient ID:</b> <span id="rPatient"></span></p>
-      <p><b>Department:</b> <span id="rDept"></span></p>
-      <p><b>Doctor:</b> <span id="rDoctor"></span></p>
-      <p><b>Risk Score:</b> <span id="rRisk"></span></p>
-
-      <h3>Summary</h3>
-      <pre id="rSummary"></pre>
-    </div>
+    <pre id="intakeResult"></pre>
   </div>
 
-  <script src="script.js"></script>
+  <!-- DOCTOR PANEL -->
+  <div id="doctor" class="panel hidden">
+    <h1>Doctor Panel</h1>
+    <div id="doctorList"></div>
+  </div>
+
+  <!-- NURSE PANEL -->
+  <div id="nurse" class="panel hidden">
+    <h1>Nurse Panel</h1>
+    <p>Patients under care will appear here.</p>
+    <div id="nurseList"></div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="admin" class="panel hidden">
+    <h1>Admin Dashboard</h1>
+    <button onclick="loadPatients()">Refresh</button>
+    <div id="adminStats"></div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>

@@ -1,180 +1,185 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
 
+# =========================================================
+# In-memory DB (demo purpose)
+# =========================================================
+PATIENT_DB = []
+
+# =========================================================
+# Core agents
+# =========================================================
 from risk import calculate_risk
 from decision_agent import care_path
 from monitor import vitals_interval
-from llm_agent import analyze_medical_report
-from notify import notify_doctor, notify_nurse
-from surgical_agent import surgical_path
-from agent_state import set_state, get_state
 from vitals_agent import monitor_vitals
 from stability_agent import check_stability
 from discharge_agent import discharge_patient
-from scheduler_agent import start_scheduler
+from surgical_agent import surgical_path
+from predictive_agent import predict_deterioration
+from diagnostic_agent import diagnostic_support
+
+# Intelligence
+from llm_agent import analyze_medical_report
+from recommendation_agent import recommend_department_and_resources
+from post_surgery_agent import post_surgery_monitoring
 from handoff_agent import handoff_patient
+from scheduler_agent import start_scheduler
+from admin_agent import admin_overview
+
+# Ops
+from notify import notify_doctor, notify_nurse
+from capacity_agent import admit_patient, release_patient, nurse_load_status, capacity_snapshot
+from resource_prep_agent import prepare_resources
+
+# External
 from who_agent import fetch_who_thresholds, get_thresholds
+from email_agent import send_discharge_emails
+from calendar_agent import create_followup_event
 
+# State
+from agent_state import set_state, get_state
 
-from capacity_agent import (
-    admit_patient,
-    release_patient,
-    nurse_load_status,
-    capacity_snapshot
+# Schemas
+from schemas import (
+    PatientIntakeRequest,
+    PatientIntakeResponse,
+    SurgicalDecisionRequest,
+    NurseInstructionRequest,
+    PatientID,
+    DischargeRequest
 )
 
+# =========================================================
+# App
+# =========================================================
 app = FastAPI(title="Agentic Hospital AI")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # HTML/JS friendly
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# 1️⃣ Patient Intake
-
-@app.post("/patient/intake")
-def patient_intake(data: dict):
-    patient_id = data["patient_id"]
-    vitals = data["vitals"]
-    symptoms = data["symptoms"]
-
-    # Risk + care decision
-    risk = calculate_risk(vitals, symptoms)
+# =========================================================
+# 1️⃣ Patient Intake (Vitals based)
+# =========================================================
+@app.post("/patient/intake", response_model=PatientIntakeResponse)
+def patient_intake(data: PatientIntakeRequest):
+    risk = calculate_risk(data.vitals.dict(), data.symptoms.dict())
     path = care_path(risk)
-    interval = vitals_interval(risk)
 
-    # Store state
-    set_state(patient_id, "risk", risk)
-    set_state(patient_id, "care_path", path)
+    set_state(data.patient_id, "risk", risk)
+    set_state(data.patient_id, "care_path", path)
 
-    # Capacity check
-    capacity_status = admit_patient(patient_id)
-
-    # Start monitoring ONLY if admitted
-    if capacity_status == "ADMITTED":
-        start_scheduler(patient_id)
-
-    # Immediate escalation
-    if path == "IMMEDIATE":
-        notify_doctor(f"Immediate escalation required for patient {patient_id}")
-        notify_nurse(f"Prepare emergency care for patient {patient_id}")
+    admit_patient(data.patient_id)
 
     return {
-        "patient_id": patient_id,
+        "patient_id": data.patient_id,
         "risk_score": risk,
         "care_path": path,
-        "monitoring_minutes": interval,
-        "capacity_status": capacity_status
+        "monitoring_minutes": vitals_interval(risk),
+        "capacity_status": "ADMITTED"
     }
 
-
-
-# 2️⃣ Doctor uploads report
-
+# =========================================================
+# 2️⃣ MAIN LLM ENDPOINT (HTML FRONTEND USES THIS)
+# =========================================================
 @app.post("/patient/report")
-def report_analysis(data: dict):
-    patient_id = data["patient_id"]
-    report = data["report"]
-
+def patient_report(patient_id: str = Form(...), report: str = Form(...)):
     insights = analyze_medical_report(report)
-    set_state(patient_id, "report_insights", insights)
 
-    notify_doctor(f"AI Insights for {patient_id}:\n{insights}")
-
-    return {
+    record = {
         "patient_id": patient_id,
-        "ai_insights": insights
+        "summary": insights,
+        "department": "Cardiology",
+        "doctor": "Dr. Sharma",
+        "risk_score": 72,
+        "status": "UNDER_REVIEW"
     }
 
+    PATIENT_DB.append(record)
+    return record
 
+# =========================================================
+# 3️⃣ Diagnostic Support (File Upload)
+# =========================================================
+@app.post("/patient/diagnostic-support")
+async def diagnostic_support_endpoint(
+    patient_id: str = Form(...),
+    file: UploadFile = File(...)
+):
+    file_path = f"/tmp/{file.filename}"
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
 
-# 3️⃣ Doctor decides Surgical / Non-Surgical
+    summary = diagnostic_support(patient_id, file_path)
 
+    record = {
+        "patient_id": patient_id,
+        "summary": summary,
+        "department": "General",
+        "doctor": "Dr. AI",
+        "risk_score": 55,
+        "status": "DIAGNOSTIC"
+    }
+
+    PATIENT_DB.append(record)
+    return record
+
+# =========================================================
+# 4️⃣ Get all patients (Admin / Doctor / Nurse panels)
+# =========================================================
+@app.get("/patients")
+def get_patients():
+    return PATIENT_DB
+
+# =========================================================
+# 5️⃣ Surgical decision
+# =========================================================
 @app.post("/patient/surgical-decision")
-def surgical_decision(data: dict):
-    patient_id = data["patient_id"]
-    is_surgical = data["is_surgical"]
+def surgical_decision(data: SurgicalDecisionRequest):
+    decision = surgical_path(data.is_surgical)
+    set_state(data.patient_id, "surgical", decision)
+    return {"patient_id": data.patient_id, "decision": decision}
 
-    decision = surgical_path(is_surgical)
-    set_state(patient_id, "surgical", decision)
-
-    notify_doctor(f"Surgical decision for {patient_id}: {decision}")
-
-    return {
-        "patient_id": patient_id,
-        "decision": decision
-    }
-
-
-
-# 4️⃣ Nurse instructions (Doctor approval required)
-
+# =========================================================
+# 6️⃣ Nurse instructions
+# =========================================================
 @app.post("/patient/nurse-instructions")
-def nurse_instructions(data: dict):
-    patient_id = data["patient_id"]
-    approved = data["doctor_approved"]
+def nurse_instructions(data: NurseInstructionRequest):
+    if not data.doctor_approved:
+        return {"status": "BLOCKED"}
 
-    if not approved:
-        return {
-            "patient_id": patient_id,
-            "status": "Waiting for doctor approval"
-        }
+    instruction = "Vitals every 30 minutes"
+    notify_nurse(instruction)
+    return {"instruction": instruction}
 
-    surgical = get_state(patient_id, "surgical")
+# =========================================================
+# 7️⃣ Predictive Risk
+# =========================================================
+@app.post("/patient/predict-risk")
+def predictive_risk(patient_id: str):
+    vitals = get_state(patient_id, "latest_vitals")
+    if not vitals:
+        return {"status": "NO_VITALS"}
+    return predict_deterioration(patient_id, vitals)
 
-    if surgical == "SURGICAL":
-        instruction = "Pre-op vitals every 15 min, prepare OT, keep patient NPO"
-    else:
-        instruction = "Medication monitoring, vitals every 30 min"
-
-    notify_nurse(f"Nurse instructions for {patient_id}: {instruction}")
-
-    return {
-        "patient_id": patient_id,
-        "nurse_instruction": instruction
-    }
-
-
-
-# 5️⃣ Manual vitals monitoring (optional trigger)
-
-@app.post("/patient/monitor")
-def auto_monitor(data: dict):
-    patient_id = data["patient_id"]
-
-    vitals = monitor_vitals(patient_id)
-
-    return {
-        "patient_id": patient_id,
-        "latest_vitals": vitals
-    }
-
-
-
-# 6️⃣ Stability check
-
-@app.post("/patient/stability")
-def patient_stability(data: dict):
-    patient_id = data["patient_id"]
-    return check_stability(patient_id)
-
-
-
-# 7️⃣ Discharge decision
-
+# =========================================================
+# 8️⃣ Discharge
+# =========================================================
 @app.post("/patient/discharge")
-def patient_discharge(data: dict):
-    patient_id = data["patient_id"]
-    approved = data["doctor_approved"]
-
-    result = discharge_patient(patient_id, approved)
-
-    # Release bed ONLY if discharged
+def patient_discharge(data: DischargeRequest):
+    result = discharge_patient(data.patient_id, data.doctor_approved)
     if result == "Patient discharged":
-        release_patient(patient_id)
+        release_patient(data.patient_id)
+    return {"status": result}
 
-    return {
-        "patient_id": patient_id,
-        "status": result
-    }
-
-
-
+# =========================================================
+# 9️⃣ Admin / Ops
+# =========================================================
 @app.get("/hospital/capacity")
 def hospital_capacity():
     return {
@@ -182,32 +187,17 @@ def hospital_capacity():
         "nurse_load": nurse_load_status()
     }
 
+@app.get("/admin/overview")
+def admin_dashboard():
+    return admin_overview()
 
-
-# 9️⃣ Patient handoff (department + nurse assignment)
-@app.post("/patient/handoff")
-def patient_handoff(data: dict):
-    patient_id = data["patient_id"]
-
-    care_path = get_state(patient_id, "care_path")
-    surgical = get_state(patient_id, "surgical")
-
-    result = handoff_patient(
-        patient_id=patient_id,
-        care_path=care_path,
-        surgical_decision=surgical
-    )
-
-    return {
-        "patient_id": patient_id,
-        "handoff": result
-    }
-
-# 🔟 WHO thresholds status / refresh
+# =========================================================
+# 10️⃣ WHO
+# =========================================================
 @app.get("/who/thresholds")
 def who_thresholds():
     return get_thresholds()
 
 @app.post("/who/refresh")
-def refresh_who():
+def who_refresh():
     return fetch_who_thresholds()
